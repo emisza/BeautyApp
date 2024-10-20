@@ -19,7 +19,7 @@ class SplashActivity : AppCompatActivity() {
             // Start the main activity
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
-            // Finish the splash activity so the user can't return to it
+            // Finish the splash activity
             finish()
         }, splashDuration)
     }
