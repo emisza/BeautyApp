@@ -9,4 +9,13 @@
     <string name="security_answer_hint">Security Answer</string>
     <string name="signup">Signup</string>
     <string name="login_redirect">Already have an account? Log in here</string>
+    <string name="product_price">$%s</string>
+    <string name="total_price">Total: $%s</string>
+    <string name="product_name_with_quantity">%1$s (x%2$d)</string>
+    <string name="product_image">Product image</string>
+    <string name="product_name">Product Name</string>
+    <string name="product_price1">Price</string>
+    <string name="decrease">-</string>
+    <string name="increase">+</string>
+
 </resources>

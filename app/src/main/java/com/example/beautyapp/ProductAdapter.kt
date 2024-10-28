@@ -1,5 +1,6 @@
 package com.example.beautyapp
 
+import CartItem
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,7 @@ import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.Filter
 import android.widget.Filterable
+import java.util.Locale
 
 class ProductAdapter(private val productList: List<Product>) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>(), Filterable {
 
@@ -34,15 +36,17 @@ class ProductAdapter(private val productList: List<Product>) : RecyclerView.Adap
         val product = filteredList[position]
         holder.productImage.setImageResource(product.imageResId)
         holder.productName.text = product.name
-        holder.productPrice.text = product.price
+        holder.productPrice.text = String.format(Locale.getDefault(), "$%.2f", product.price)
+
         holder.productDescription.text = product.description
 
         // Handle Add to Cart button click
         holder.addToCartButton.setOnClickListener {
-            Cart.items.add(product) // Add product to Cart
+            Cart.items.add(CartItem(product, 1))  // Add product to Cart as a CartItem with quantity 1
             Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     // Return the total number of items in the data set
     override fun getItemCount(): Int {
