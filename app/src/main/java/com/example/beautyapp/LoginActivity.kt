@@ -18,6 +18,7 @@ class LoginActivity : AppCompatActivity() {
 
         databaseHelper = DatabaseHelper(this)
 
+
         // Handle login button click
         binding.loginButton.setOnClickListener {
             val loginUsername = binding.loginUsername.text.toString()
@@ -46,15 +47,20 @@ class LoginActivity : AppCompatActivity() {
     }
 
          // Function to check login credentials
-        private fun loginDatabase(username: String, password: String) {
-        val userExists = databaseHelper.readUser(username, password)
-        if (userExists) {
-            Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish()
-        } else {
-            Toast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show()
-        }
-        }
+         private fun loginDatabase(username: String, password: String) {
+             if (username.isEmpty() || password.isEmpty()) {
+                 Toast.makeText(this, "Username and password cannot be empty", Toast.LENGTH_SHORT).show()
+                 return
+             }
+
+             val userExists = databaseHelper.readUser(username, password)
+             if (userExists) {
+                 Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show()
+                 val intent = Intent(this, MainActivity::class.java)
+                 startActivity(intent)
+                 finish()
+             } else {
+                 Toast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show()
+             }
+         }
 }

@@ -4,8 +4,10 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
+import org.mindrot.jbcrypt.BCrypt
 
-class DatabaseHelper(private val context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION){
+class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "UserDatabase.db"
@@ -19,12 +21,15 @@ class DatabaseHelper(private val context: Context): SQLiteOpenHelper(context, DA
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
-        val createTableQuery = ("CREATE TABLE $TABLE_NAME (" +
-                "$COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "$COLUMN_USERNAME TEXT, " +
-                "$COLUMN_PASSWORD TEXT, " +
-                "$COLUMN_SECURITY_QUESTION TEXT, " +
-                "$COLUMN_SECURITY_ANSWER TEXT)")
+        val createTableQuery = """
+            CREATE TABLE $TABLE_NAME (
+                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COLUMN_USERNAME TEXT,
+                $COLUMN_PASSWORD TEXT,
+                $COLUMN_SECURITY_QUESTION TEXT,
+                $COLUMN_SECURITY_ANSWER TEXT
+            )
+        """.trimIndent()
         db?.execSQL(createTableQuery)
     }
 
@@ -36,43 +41,49 @@ class DatabaseHelper(private val context: Context): SQLiteOpenHelper(context, DA
     }
 
     fun insertUser(username: String, password: String, securityQuestion: String, securityAnswer: String): Long {
+        val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
         val values = ContentValues().apply {
             put(COLUMN_USERNAME, username)
-            put(COLUMN_PASSWORD, password)
+            put(COLUMN_PASSWORD, hashedPassword)
             put(COLUMN_SECURITY_QUESTION, securityQuestion)
             put(COLUMN_SECURITY_ANSWER, securityAnswer)
         }
-        val db = writableDatabase
-        return db.insert(TABLE_NAME, null, values)
+        return writableDatabase.insert(TABLE_NAME, null, values)
     }
 
     fun readUser(username: String, password: String): Boolean {
         val db = readableDatabase
-        val selection = "$COLUMN_USERNAME = ? AND $COLUMN_PASSWORD = ?"
-        val selectionArgs = arrayOf(username, password)
-        val cursor = db.query(TABLE_NAME, null, selection, selectionArgs, null, null, null)
+        val cursor = db.query(TABLE_NAME, arrayOf(COLUMN_PASSWORD), "$COLUMN_USERNAME = ?", arrayOf(username), null, null, null)
 
-        val userExists = cursor.count > 0
-        cursor.close()
-        return userExists
+        cursor.use {
+            if (it != null && it.moveToFirst()) {
+                val storedHashedPassword = it.getString(it.getColumnIndexOrThrow(COLUMN_PASSWORD))
+                Log.d("DatabaseHelper", "Stored hashed password: $storedHashedPassword")
+
+                val isPasswordValid = BCrypt.checkpw(password, storedHashedPassword)
+                Log.d("DatabaseHelper", "Password verification result: $isPasswordValid")
+                return isPasswordValid
+            }
+        }
+        return false
     }
 
     fun readSecurityAnswer(username: String, securityAnswer: String): Boolean {
         val db = readableDatabase
-        val selection = "$COLUMN_USERNAME = ? AND $COLUMN_SECURITY_ANSWER = ?"
-        val selectionArgs = arrayOf(username, securityAnswer)
-        val cursor = db.query(TABLE_NAME, null, selection, selectionArgs, null, null, null)
+        val cursor = db.query(TABLE_NAME, arrayOf(COLUMN_SECURITY_ANSWER), "$COLUMN_USERNAME = ? AND $COLUMN_SECURITY_ANSWER = ?", arrayOf(username, securityAnswer), null, null, null)
 
-        val isAnswerCorrect = cursor.count > 0
-        cursor.close()
-        return isAnswerCorrect
+        cursor.use {
+            return it != null && it.count > 0
+        }
     }
 
     fun updatePassword(username: String, newPassword: String) {
-        val db = writableDatabase
+        val hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt())
         val values = ContentValues().apply {
-            put(COLUMN_PASSWORD, newPassword)
+            put(COLUMN_PASSWORD, hashedPassword)
         }
-        db.update(TABLE_NAME, values, "$COLUMN_USERNAME = ?", arrayOf(username))
+        writableDatabase.update(TABLE_NAME, values, "$COLUMN_USERNAME = ?", arrayOf(username))
+        Log.d("DatabaseHelper", "Password updated for user: $username")
     }
+
 }
